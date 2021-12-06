@@ -1,0 +1,128 @@
+{
+	"name": "ZenScript",
+	"scopeName": "source.zenscript",
+	"fileTypes": [
+		"zs"
+	],
+	"patterns": [
+		{
+			"include": "#preprocessor"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"match": "\\b(import)\\b\\s*\\b([\\w.]+)\\b\\s*(?:(as)\\b\\s+(\\w+))?\\b\\s*;",
+			"captures": {
+			  "1": {
+				"name": "keyword.other.import.zenscript"
+			  },
+			  "2": {
+				"name": "support.class"
+			  },
+			  "3": {
+				  "name": "keyword.other.as.zenscript"
+			  },
+			  "4": {
+				  "name": "support.class.alias"
+			  },
+			  "5": {
+				  "name": "punctuation.terminator.zenscript"
+			  }
+			},
+			"name": "meta.import.zenscript",
+			"contentName": "storage.modifier.import.java",
+			"patterns": [
+			  {
+				"include": "#comments"
+			  },
+			  {
+				"match": "(?<=\\.)\\s*\\.|\\.(?=\\s*;)",
+				"name": "invalid.illegal.character_not_allowed_here.java"
+			  },
+			  {
+				"match": "(?<!\\.)\\s*\\*",
+				"name": "invalid.illegal.character_not_allowed_here.java"
+			  },
+			  {
+				"match": "(?<!_)_(?=\\s*(\\.|;))|\\b\\d+|-+",
+				"name": "invalid.illegal.character_not_allowed_here.java"
+			  },
+			  {
+				"match": "(?x)\\b(?<!\\$)\n(abstract|assert|boolean|break|byte|case|catch|char|class|\nconst|continue|default|do|double|else|enum|extends|final|\nfinally|float|for|goto|if|implements|import|instanceof|int|\ninterface|long|native|new|package|permits|private|protected|public|\nreturn|sealed|non-sealed|short|static|strictfp|super|switch|syncronized|this|\nthrow|throws|transient|try|void|volatile|while|yield|\ntrue|false|null)\\b",
+				"name": "invalid.illegal.character_not_allowed_here.java"
+			  },
+			  {
+				"match": "\\.",
+				"name": "punctuation.separator.java"
+			  },
+			  {
+				"match": "\\*",
+				"name": "variable.language.wildcard.java"
+			  }
+			]
+		}
+	],
+
+	"repository": {
+		"numbers": {
+			"patterns": [
+				{
+					"match": "(?<!\\.)\\b0b\\d+\\b(?!\\.)",
+					"name": "invalid.illegal.not_supported_binary_type.zenscript"
+				},
+				{
+					"match": "(?<!\\.)\\b0[oO]?\\d+\\b(?!\\.)",
+					"name": "invalid.illegal.not_supported_octal_type.zenscript"
+				},
+				{
+					"match": "(?<!\\.)\\b\\d+(\\.\\d+[fFdD]?)?\\b(?!\\.)",
+					"name": "constant.numeric.decimal.zenscript"
+				},
+				{
+					"match": "(?<!\\.)\\b(0[Xx][A-Fa-f0-9]+)\\b(?!\\.)",
+					"name": "constant.numeric.hex.zenscript"
+				}
+			]
+		},
+		"test": {
+
+		},
+		"preprocessor": {
+			"patterns": [
+				{ "include": "#numbers" }
+			],
+			"begin": "^(#\\w+)\\b\\s*(\\w*)\\b\\s*\\b([\\s\\w]*)\\b",
+			"beginCaptures": {
+				"1": {
+					"name": "meta.preprocessor.zenscript"
+				},
+				"2": {
+					"name": "constant.other.zenscript"
+				},
+				"3": {
+					"name": "comment.line.zenscript"
+				}
+
+			},
+			"end": "\n"
+
+		},
+		"comments": {
+			"patterns": [
+			  {
+				"name": "comment.block.zenscript",
+				"begin": "/\\*",
+				"end": "\\*/"
+			  },
+			  {
+				"name": "comment.line.zenscript",
+				"begin": "//|#",
+				"end": "$\\n?"
+			  }
+			]
+		}
+		
+
+	}
+}
