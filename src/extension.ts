@@ -32,21 +32,26 @@ export function activate(context: vscode.ExtensionContext) {
         "zenscript.restartServer",
         restartLanguageServer
     );
-	socket = net.connect({port: serverPort}, () => {
-		connectLanguageServer();
-	})
-	.setTimeout(1)
-	.on("error", () =>{
-		startLanguageServer();
-	})
+	startLanguageServer();
 }
 
 export function deactivate(): Thenable<void> | undefined {
+	client?.stop();
 	client = null;
 	return;
 }
 
 function startLanguageServer() {
+	socket = net.connect({port: serverPort}, () => {
+		connectLanguageServer();
+	})
+	.setTimeout(1)
+	.on("error", () =>{
+		startBuildInLanguageServer();
+	});
+}
+
+function startBuildInLanguageServer() {
 	vscode.window.withProgress({ location: vscode.ProgressLocation.Window }, (progress) => {
 		return new Promise<void>((resolve, reject) => {
 			const clientOptions: LanguageClientOptions = {
@@ -65,7 +70,7 @@ function startLanguageServer() {
 			};
 			client = new LanguageClient(
 				"zenscript",
-				"ZenScript Language Client",
+				"ZenScript Language Client(build-in)",
 				executable,
 				clientOptions
 			);
@@ -92,7 +97,7 @@ function connectLanguageServer() {
 	};
 	client = new LanguageClient(
 		'zenscript',
-		'ZenScript Language Client', 
+		'ZenScript Language Client(remote)', 
 		serverOptions,
 		clientOptions
 	);
@@ -101,34 +106,14 @@ function connectLanguageServer() {
 }
 
 function restartLanguageServer() {
-	socket = net.connect({port: serverPort}, () => {
-		connectLanguageServer();
-	})
-	.setTimeout(1)
-	.on("error", () =>{
+	if (client) {
+		client.stop().then(() => {
+			client = null;
+			startLanguageServer();
+		});
+	} else {
 		startLanguageServer();
-	})
-	if (!client) {
-
-        return;
 	}
-	const oldLanguageClient = client;
-	client = null;
-	oldLanguageClient.stop().then(() => {
-		startLanguageServer();
-    },
-        () => {
-		//something went wrong restarting the language server...
-		//this shouldn't happen, but if it does, the user can manually restart
-		vscode.window
-            .showWarningMessage(RELOAD_WINDOW_MESSAGE, LABEL_RELOAD_WINDOW)
-            .then((action) => {
-			if (action === LABEL_RELOAD_WINDOW) {
-                vscode.commands.executeCommand("workbench.action.reloadWindow");
-			}
-            });
-        }
-	);
 }
 
 // MIT Licensed code from: https://github.com/georgewfraser/vscode-javac

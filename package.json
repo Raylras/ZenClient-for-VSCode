@@ -67,19 +67,18 @@
 		},
 		"commands": [
 			{
-			  "command": "zenscript.restartServer",
-			  "title": "Restart ZenScript language server",
-			  "category": "ZenScript"
+				"command": "zenscript.restartServer",
+				"title": "Restart ZenScript language server",
+				"category": "ZenScript"
 			}
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "webpack --mode production",
-		"compile": "webpack --mode none",
-		"watch": "webpack --mode none --watch"
-	},
-	"dependencies": {
-		"vscode-languageclient": "^7.0.0"
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"yaml2json": "cd ./language && yamljson zenscript.tmLanguage.yaml > zenscript.tmLanguage.json",
+		"build": "npm run yaml2json && vsce package"
 	},
 	"devDependencies": {
 		"@types/node": "^14.17.3",
@@ -89,7 +88,6 @@
 		"vsce": "^1.93.0",
 		"vscode-jsonrpc": "^6.0.0",
 		"vscode-languageclient": "^7.0.0",
-		"webpack": "^5.65.0",
-		"webpack-cli": "^4.9.1"
+		"yamljson": "^1.0.70"
 	}
 }
