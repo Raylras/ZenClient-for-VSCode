@@ -33,17 +33,15 @@ repository:
 
   import-declaration:
     name: meta.import.zenscript
-    match: '\b(import)\s+(\w+(?:\.\w+)*)\b(?:\s+(as)\s+(\w+))?\s*(;)'
+    match: '\b(import)\s+(\w+(?:\.\w+)*\.(\w+))\b(?:\s+(as)\s+(\w+))?\s*(;)'
     captures:
       '1':
         name: keyword.other.import.zenscript
-      '2':
-        name: support.class.zenscript
-      '3':
-        name: keyword.other.as.zenscript
       '4':
-        name: variable.other.alias.zenscript
+        name: keyword.other.as.zenscript
       '5':
+        name: variable.other.alias.zenscript
+      '6':
         name: punctuation.terminator.zenscript
 
   class-declaration:
@@ -162,8 +160,8 @@ repository:
     name: meta.member-call.zenscript
     begin: '(?<=\.)\b([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\()'
     beginCaptures:
-      '1':
-        name: variable.other.constant.member.zenscript
+      # '1':
+        # name: variable.other.constant.member.zenscript
     end: '(?=\.|\[|\]|\)|;|\s|\b)'
 
   function-declaration:

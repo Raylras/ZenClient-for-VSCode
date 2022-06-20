@@ -1,38 +1,25 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ 
- */
-
 import * as fs from "fs";
 import * as net from 'net';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
 import {
+	Executable,
 	LanguageClient,
 	LanguageClientOptions,
-	Executable,
 	ServerOptions,
 	StreamInfo
 } from 'vscode-languageclient/node';
 
-const LABEL_RELOAD_WINDOW = "Reload Window";
-const RELOAD_WINDOW_MESSAGE = "Please reload the window.";
-
 const serverPort = 9865;
-let socket: net.Socket;
-
-let extensionContext: vscode.ExtensionContext;
 let client: LanguageClient | null;
 
 export function activate(context: vscode.ExtensionContext) {
-	extensionContext = context;
-    vscode.commands.registerCommand(
-        "zenscript.restartServer",
-        restartLanguageServer
-    );
-	startLanguageServer();
+	// vscode.commands.registerCommand(
+	// 	"zenscript.restartServer",
+	// 	restartLanguageServer
+	// );
+	startLanguageServer(context);
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -41,49 +28,70 @@ export function deactivate(): Thenable<void> | undefined {
 	return;
 }
 
-function startLanguageServer() {
-	socket = net.connect({port: serverPort}, () => {
-		connectLanguageServer();
+function startLanguageServer(context: vscode.ExtensionContext){
+	const socket = net.connect({port:serverPort})
+	.on('connect', () => {
+		connectLanguageServer(context, socket);
 	})
 	.setTimeout(1)
-	.on("error", () =>{
-		startBuildInLanguageServer();
+	.on('error', () => {
+		createLanguageServer(context);
+	})
+}
+
+function restartLanguageServer(context: vscode.ExtensionContext) {
+	let oldClient = client;
+	client = null;
+	oldClient?.stop().then(() => {
+		startLanguageServer(context);
 	});
 }
 
-function startBuildInLanguageServer() {
-	vscode.window.withProgress({ location: vscode.ProgressLocation.Window }, (progress) => {
-		return new Promise<void>((resolve, reject) => {
-			const clientOptions: LanguageClientOptions = {
-				documentSelector: [{ scheme: "file", language: "zenscript" }],
-				synchronize: {
-					fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
-				},
-			};
-			const args = [
-				"-jar",
-				path.resolve(extensionContext.extensionPath, "server", "zenserver-1.0.jar"),
-			];
-			const executable: Executable = {
-				command: findJavaExecutable('java'),
-				args: args,
-			};
-			client = new LanguageClient(
-				"zenscript",
-				"ZenScript Language Client(build-in)",
-				executable,
-				clientOptions
-			);
-			client.onReady().then(resolve, (reason: any) => {
-				resolve();
-			});
-			const disposable = client.start();
-			extensionContext.subscriptions.push(disposable);
-		});
-	});
+function createLanguageServer(context: vscode.ExtensionContext) {
+	const javaPath = findJavaExecutable('java');
+	const args = [
+		'-jar',
+		path.resolve(context.extensionPath, "server", "zenserver-1.1.0.jar"),
+		'-standard-io'
+	];
+	args.unshift("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005,quiet=y")
+	const clientOptions: LanguageClientOptions = {
+		documentSelector: [{ scheme: 'file', language: 'zenscript' }],
+		synchronize: {
+			fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
+		},
+
+		// Apache Licensed code from: https://github.com/GroovyLanguageServer/groovy-language-server
+		uriConverters: {
+            code2Protocol: (value: vscode.Uri) => {
+              if (/^win32/.test(process.platform)) {
+                //drive letters on Windows are encoded with %3A instead of :
+                //but Java doesn't treat them the same
+                return value.toString().replace("%3A", ":");
+              } else {
+                return value.toString();
+              }
+            },
+            //this is just the default behavior, but we need to define both
+            protocol2Code: (value) => vscode.Uri.parse(value),
+		}
+
+	};
+	const executable: Executable = {
+		command: javaPath,
+		args: args,
+	  };
+	client = new LanguageClient(
+		'zenscript',
+		'ZenScript Language Client(built-in)', 
+		executable,
+		clientOptions
+	);
+	const disposable = client.start();
+	context.subscriptions.push(disposable);
 }
 
-function connectLanguageServer() {
+function connectLanguageServer(context: vscode.ExtensionContext, socket: net.Socket) {
 	const serverOptions: ServerOptions = () => {
 		return new Promise<StreamInfo>((resolve, reject) => {
 			resolve({writer: socket, reader: socket});
@@ -93,7 +101,23 @@ function connectLanguageServer() {
 		documentSelector: [{ scheme: 'file', language: 'zenscript' }],
 		synchronize: {
 			fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
+		},
+
+		// Apache Licensed code from: https://github.com/GroovyLanguageServer/groovy-language-server
+		uriConverters: {
+            code2Protocol: (value: vscode.Uri) => {
+              if (/^win32/.test(process.platform)) {
+                //drive letters on Windows are encoded with %3A instead of :
+                //but Java doesn't treat them the same
+                return value.toString().replace("%3A", ":");
+              } else {
+                return value.toString();
+              }
+            },
+            //this is just the default behavior, but we need to define both
+            protocol2Code: (value) => vscode.Uri.parse(value),
 		}
+
 	};
 	client = new LanguageClient(
 		'zenscript',
@@ -102,18 +126,7 @@ function connectLanguageServer() {
 		clientOptions
 	);
 	const disposable = client.start();
-	extensionContext.subscriptions.push(disposable);
-}
-
-function restartLanguageServer() {
-	if (client) {
-		client.stop().then(() => {
-			client = null;
-			startLanguageServer();
-		});
-	} else {
-		startLanguageServer();
-	}
+	context.subscriptions.push(disposable);
 }
 
 // MIT Licensed code from: https://github.com/georgewfraser/vscode-javac
